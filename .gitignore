@@ -1,0 +1,13 @@
+/**/bin
+/**/obj
+/**/.vs
+/**/.idea
+/**/*.suo
+/**/*.scc
+/**/*.mdf
+/**/*.ldf
+/**/*.csproj.user
+/**/*.DotSettings.user
+/**/*.apk
+db/*.backup
+db/*.rar
