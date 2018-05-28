@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace _01_Items
 {
@@ -10,12 +6,21 @@ namespace _01_Items
 	{
 		static void Main (string[] args)
 		{
-			var ProcInfo = WgContext.NameForAction<S01> (Pieces.p01);
+			S01 Data = new S01 { X = 7, N = 11 };
 
-			Action<WgContext, S01> action02 = WgContext.ActionForName<S01> (ProcInfo);
+			{
+				var ProcInfo = WgContext.NameForAction<S01> (Pieces.p01);
+				Action<WgContext, S01> action02 = WgContext.ActionForName<S01> (ProcInfo);
 
-			S01 Data = new S01 { X = 7 };
-			action02 (null, Data);
+				action02 (null, Data);
+			}
+
+			{
+				var ProcInfo = WgContext.NameForPredicate<S01> (Pieces.For_01_Check);
+				Func<WgContext, S01, bool> action02 = WgContext.PredicateForName<S01> (ProcInfo);
+
+				bool B = action02 (null, Data);
+			}
 		}
 	}
 }
