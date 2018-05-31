@@ -1,71 +1,7 @@
 ﻿using System;
-using System.Reflection;
 
 namespace _01_Items
 {
-	public class GrainInfo
-	{
-		public string MethodAssembly;
-		public string MethodClass;
-		public string MethodName;
-
-		public string DataAssembly;
-		public string DataType;
-	}
-
-	public class WgContext
-	{
-		protected static GrainInfo NameForDelegate (Delegate Block, Type T)
-		{
-			return new GrainInfo
-				{
-					MethodAssembly = Block.Method.DeclaringType.Assembly.FullName,
-					MethodClass = Block.Method.DeclaringType.FullName,
-					MethodName = Block.Method.Name,
-					DataAssembly = T.Assembly.FullName,
-					DataType = T.FullName
-				};
-		}
-
-		public static GrainInfo NameForAction<T> (Action<WgContext, T> Block)
-		{
-			return NameForDelegate (Block, typeof(T));
-		}
-
-		public static GrainInfo NameForPredicate<T> (Func<WgContext, T, bool> Block)
-		{
-			return NameForDelegate (Block, typeof (T));
-		}
-
-		public static Delegate DelegateForName (GrainInfo Info, Func<Type, Type> DelTypeMaker)
-		{
-			Assembly MethodAssembly = Assembly.Load (Info.MethodAssembly);
-			Type MethodClass = MethodAssembly.GetType (Info.MethodClass);
-
-			Assembly DataAssembly = Assembly.Load (Info.DataAssembly);
-			Type DataType = DataAssembly.GetType (Info.DataType);
-
-			Type ActionType = DelTypeMaker (DataType);
-			Delegate Proc = Delegate.CreateDelegate (ActionType, MethodClass, Info.MethodName, false, false);
-
-			return Proc;
-		}
-
-		public static Action<WgContext, T> ActionForName<T> (GrainInfo Info)
-		{
-			Action<WgContext, T> Proc = (Action<WgContext, T>)DelegateForName (Info, DT => typeof (Action<,>).MakeGenericType (typeof (WgContext), DT));
-
-			return Proc;
-		}
-
-		public static Func<WgContext, T, bool> PredicateForName<T> (GrainInfo Info)
-		{
-			Func<WgContext, T, bool> Proc = (Func<WgContext, T, bool>)DelegateForName (Info, DT => typeof (Func<,,>).MakeGenericType (typeof (WgContext), DT, typeof (bool)));
-
-			return Proc;
-		}
-	}
-
 	public class S01
 	{
 		public int X;
@@ -77,7 +13,14 @@ namespace _01_Items
 	{
 		public static void p01 (WgContext Context, S01 Data)
 		{
-			++Data.X;
+			Data.S = "First Test";
+
+			Context.ProceedTo<S01> (p02);
+		}
+
+		public static void p02 (WgContext Context, S01 Data)
+		{
+			Console.WriteLine ($"Task \"{Data.S}\" is over.");
 		}
 
 		public static void For_01_Init (WgContext Context, S01 Data)
@@ -93,6 +36,11 @@ namespace _01_Items
 		public static void For_01_Step (WgContext Context, S01 Data)
 		{
 			++Data.N;
+		}
+
+		public static void For_01_Body (WgContext Context, S01 Data)
+		{
+			Console.WriteLine ($"f({Data.X}) = {Data.X + Data.N}");
 		}
 	}
 }
