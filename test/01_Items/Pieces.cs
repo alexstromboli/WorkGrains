@@ -6,7 +6,11 @@ namespace _01_Items
 	{
 		public int X;
 		public string S;
-		public int N;
+
+		public class _for01 : For<S01, _for01>
+		{
+			public int N;
+		}
 	}
 
 	public static class Pieces
@@ -15,7 +19,7 @@ namespace _01_Items
 		{
 			Data.S = "First Test";
 
-			Context.ProceedTo<S01> (p02);
+			Context.ProceedTo (S01._for01.Generate (For_01_Init, For_01_Check, For_01_Step, For_01_Body, p02));
 		}
 
 		public static void p02 (WgContext Context, S01 Data)
@@ -23,24 +27,25 @@ namespace _01_Items
 			Console.WriteLine ($"Task \"{Data.S}\" is over.");
 		}
 
-		public static void For_01_Init (WgContext Context, S01 Data)
+		public static void For_01_Init (WgContext Context, S01._for01 Data)
 		{
 			Data.N = 0;
 		}
 
-		public static bool For_01_Check (WgContext Context, S01 Data)
+		public static bool For_01_Check (WgContext Context, S01._for01 Data)
 		{
 			return Data.N < 10;
 		}
 
-		public static void For_01_Step (WgContext Context, S01 Data)
+		public static void For_01_Step (WgContext Context, S01._for01 Data)
 		{
 			++Data.N;
 		}
 
-		public static void For_01_Body (WgContext Context, S01 Data)
+		public static void For_01_Body (WgContext Context, S01._for01 Data)
 		{
-			Console.WriteLine ($"f({Data.X}) = {Data.X + Data.N}");
+			S01 Outer = (S01)Context.GetPrevEntry (3).EffectiveData;
+			Console.WriteLine ($"f({Data.N}) = {Outer.X + Data.N}");
 		}
 	}
 }
