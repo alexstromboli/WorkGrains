@@ -27,9 +27,24 @@ namespace _01_Items
 		void Append (WgContext Context);
 	}
 
-	public class For<T, F> : IGrain where F : For<T, F>, new () where T : class
+	public class InnerBlock<OUT> : IGrain
 	{
 		public int OuterBlockDataDepth { get; protected set; }
+
+		public virtual void Append (WgContext Context)
+		{
+			OuterBlockDataDepth = Context.CallStackDepth;
+		}
+
+		public OUT GetOuterData (WgContext Context)
+		{
+			OUT OuterData = (OUT)Context.AtDepth (OuterBlockDataDepth).Data;
+			return OuterData;
+		}
+	}
+
+	public class For<T, F> : InnerBlock<T> where F : For<T, F>, new () where T : class
+	{
 		protected Action<WgContext, F> Init;
 		protected Func<WgContext, F, bool> Check;
 		protected Action<WgContext, F> Step;
@@ -54,9 +69,9 @@ namespace _01_Items
 			return This;
 		}
 
-		public void Append (WgContext Context)
+		public override void Append (WgContext Context)
 		{
-			OuterBlockDataDepth = Context.CallStackDepth;
+			base.Append (Context);
 
 			if (NextProc != null)
 			{
