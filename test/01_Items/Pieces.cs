@@ -44,7 +44,7 @@ namespace _01_Items
 
 		public static void For_01_Body (WgContext Context, S01._for01 Data)
 		{
-			S01 Outer = (S01)Context.GetPrevEntry (3).EffectiveData;
+			S01 Outer = (S01)Context.AtDepth (Data.OuterBlockDataDepth).Data;
 			Console.WriteLine ($"f({Data.N}) = {Outer.X + Data.N}");
 		}
 	}

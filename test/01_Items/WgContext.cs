@@ -19,9 +19,7 @@ namespace _01_Items
 	public class CallStackEntry
 	{
 		public Delegate Proc;
-		public object Data;     // if null, inherits previous Data
-
-		public object EffectiveData;	// for runtime only
+		public object Data;
 	}
 
 	public interface IGrain
@@ -31,6 +29,7 @@ namespace _01_Items
 
 	public class For<T, F> : IGrain where F : For<T, F>, new () where T : class
 	{
+		public int OuterBlockDataDepth { get; protected set; }
 		protected Action<WgContext, F> Init;
 		protected Func<WgContext, F, bool> Check;
 		protected Action<WgContext, F> Step;
@@ -57,10 +56,11 @@ namespace _01_Items
 
 		public void Append (WgContext Context)
 		{
+			OuterBlockDataDepth = Context.CallStackDepth;
+
 			if (NextProc != null)
 			{
-				CallStackEntry Entry = Context.GetPrevEntry (0);
-				Context.ProceedTo (NextProc, Entry.Data as T);
+				Context.ProceedTo (NextProc);
 			}
 
 			Context.ProceedTo (MakeStep, (F)this);
@@ -78,8 +78,16 @@ namespace _01_Items
 			if (Proceed)
 			{
 				Context.ProceedTo (MakeStep, Data);
-				Context.ProceedTo (Data.Step);
-				Context.ProceedTo (Data.Body);
+
+				if (Data.Step != null)
+				{
+					Context.ProceedTo (Data.Step);
+				}
+
+				if (Data.Body != null)
+				{
+					Context.ProceedTo (Data.Body);
+				}
 			}
 		}
 	}
@@ -89,8 +97,11 @@ namespace _01_Items
 		//
 		protected Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
 		protected CallStackEntry CurrentEntry;
+		public bool IsLast { get; protected set; } = true;
+		public int CallStackDepth => CallStack.Count;
+		public CallStackEntry AtDepth (int Depth) => CallStack.Skip (CallStack.Count - Depth - 1).First ();
 
-		public CallStackEntry GetPrevEntry (int Depth = 1)
+		protected CallStackEntry GetPrevEntry (int Depth = 1)
 		{
 			if (Depth < 0 || Depth > CallStack.Count)
 			{
@@ -110,31 +121,44 @@ namespace _01_Items
 			while (!ehStop.WaitOne (0) && CallStack.Count > 0)
 			{
 				CurrentEntry = CallStack.Pop ();
-				CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] { this, CurrentEntry.EffectiveData }, Thread.CurrentThread.CurrentCulture);
+				IsLast = true;
+				CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] { this, CurrentEntry.Data }, Thread.CurrentThread.CurrentCulture);
 			}
 		}
 
 		//
 		public void ProceedToGeneric (Delegate NextProc, object Data, Delegate FurtherProc, uint StartAt = 0)
 		{
-			object LastStackData = GetPrevEntry ()?.EffectiveData;
+			object LastStackData = GetPrevEntry ()?.Data;
+
+			if (Data == null)
+			{
+				if (IsLast)
+				{
+					Data = CurrentEntry.Data;
+				}
+				else
+				{
+					Data = LastStackData;
+				}
+			}
 
 			if (FurtherProc != null)
 			{
 				CallStack.Push (new CallStackEntry
 					{
 						Proc = FurtherProc,
-						Data = null,
-						EffectiveData = LastStackData
+						Data = LastStackData
 					});
 			}
 
 			CallStack.Push (new CallStackEntry
 				{
 					Proc = NextProc,
-					Data = Data,
-					EffectiveData = Data ?? LastStackData
+					Data = Data
 				});
+
+			IsLast = false;
 		}
 
 		//
