@@ -6,7 +6,7 @@ namespace _01_Items
 	{
 		static void Main (string[] args)
 		{
-			S01 Data = new S01 { X = 6 };
+			S01 Data = new S01 {Numbers = new[] {5, 3, 8, 10, 1}};
 
 			WgContext Context = new WgContext ();
 			Context.ProceedTo (Pieces.p01, Data);

@@ -20,6 +20,16 @@ namespace _01_Items
 	{
 		public Delegate Proc;
 		public object Data;
+
+		public static CallStackEntry MakeEmpty (object Data)
+		{
+			return new CallStackEntry { Data = Data, Proc = null };
+		}
+
+		public override string ToString ()
+		{
+			return $"{Proc?.Method.DeclaringType.Name ?? "null"}.{Proc?.Method.Name ?? "null"} - {Data.GetType().Name}";
+		}
 	}
 
 	public interface IGrain
@@ -56,7 +66,7 @@ namespace _01_Items
 			Func<WgContext, F, bool> Check,
 			Action<WgContext, F> Step,
 			Action<WgContext, F> Body,
-			Action<WgContext, T> NextProc
+			Action<WgContext, T> NextProc = null
 			)
 		{
 			F This = new F ();
@@ -114,7 +124,7 @@ namespace _01_Items
 		protected CallStackEntry CurrentEntry;
 		public bool IsLast { get; protected set; } = true;
 		public int CallStackDepth => CallStack.Count;
-		public CallStackEntry AtDepth (int Depth) => CallStack.Skip (CallStack.Count - Depth - 1).First ();
+		public CallStackEntry AtDepth (int Depth) => CallStack.Skip (CallStack.Count - Depth).First ();
 
 		protected CallStackEntry GetPrevEntry (int Depth = 1)
 		{
@@ -136,6 +146,15 @@ namespace _01_Items
 			while (!ehStop.WaitOne (0) && CallStack.Count > 0)
 			{
 				CurrentEntry = CallStack.Pop ();
+
+				if (CurrentEntry.Proc == null)
+				{
+					continue;
+				}
+
+				// to keep data in stack
+				CallStack.Push (CallStackEntry.MakeEmpty (CurrentEntry.Data));
+
 				IsLast = true;
 				CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] { this, CurrentEntry.Data }, Thread.CurrentThread.CurrentCulture);
 			}
