@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace _01_Items
+﻿namespace _01_Items
 {
-	public class S01
+	public class S01 : InnerBlockC
 	{
 		public int[] Numbers;
 
@@ -37,8 +35,7 @@ namespace _01_Items
 
 		public static bool For_01_Check (WgContext Context, S01._for01 Data)
 		{
-			S01 Outer = Data.GetOuterData (Context);
-			return Data.i < Outer.Numbers.Length - 1;
+			return Data.i < Data.Outer.Numbers.Length - 1;
 		}
 
 		public static void For_01_Step (WgContext Context, S01._for01 Data)
@@ -54,14 +51,12 @@ namespace _01_Items
 		//
 		public static void For_02_Init (WgContext Context, S01._for02 Data)
 		{
-			S01._for01 OuterFor = Data.GetOuterData (Context);
-			Data.j = OuterFor.i + 1;
+			Data.j = Data.Outer.i + 1;
 		}
 
 		public static bool For_02_Check (WgContext Context, S01._for02 Data)
 		{
-			S01 MainBodyData = Data.GetOuterData (Context).GetOuterData (Context);
-			return Data.j < MainBodyData.Numbers.Length;
+			return Data.j < Data.Outer.Outer.Numbers.Length;
 		}
 
 		public static void For_02_Step (WgContext Context, S01._for02 Data)
@@ -71,14 +66,11 @@ namespace _01_Items
 
 		public static void For_02_Body (WgContext Context, S01._for02 Data)
 		{
-			S01._for01 OuterFor = Data.GetOuterData (Context);
-			S01 MainBodyData = Data.GetOuterData (Context).GetOuterData (Context);
-
-			if (MainBodyData.Numbers[Data.j] < MainBodyData.Numbers[OuterFor.i])
+			if (Data.Outer.Outer.Numbers[Data.j] < Data.Outer.Outer.Numbers[Data.Outer.i])
 			{
-				int t = MainBodyData.Numbers[Data.j];
-				MainBodyData.Numbers[Data.j] = MainBodyData.Numbers[OuterFor.i];
-				MainBodyData.Numbers[OuterFor.i] = t;
+				int t = Data.Outer.Outer.Numbers[Data.j];
+				Data.Outer.Outer.Numbers[Data.j] = Data.Outer.Outer.Numbers[Data.Outer.i];
+				Data.Outer.Outer.Numbers[Data.Outer.i] = t;
 			}
 		}
 	}

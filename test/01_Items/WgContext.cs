@@ -16,12 +16,32 @@ namespace _01_Items
 		public string DataType;
 	}
 
+	public interface IGrain
+	{
+		void Append (WgContext Context);
+	}
+
+	public class InnerBlockC
+	{
+		public object OuterC;
+	}
+
+	public class InnerBlock<T> : InnerBlockC
+	{
+		public T Outer
+		{
+			get { return (T)OuterC; }
+
+			set { OuterC = value; }
+		}
+	}
+
 	public class CallStackEntry
 	{
 		public Delegate Proc;
-		public object Data;
+		public InnerBlockC Data;
 
-		public static CallStackEntry MakeEmpty (object Data)
+		public static CallStackEntry MakeEmpty (InnerBlockC Data)
 		{
 			return new CallStackEntry { Data = Data, Proc = null };
 		}
@@ -32,28 +52,9 @@ namespace _01_Items
 		}
 	}
 
-	public interface IGrain
-	{
-		void Append (WgContext Context);
-	}
-
-	public class InnerBlock<OUT> : IGrain
-	{
-		public int OuterBlockDataDepth { get; protected set; }
-
-		public virtual void Append (WgContext Context)
-		{
-			OuterBlockDataDepth = Context.CallStackDepth;
-		}
-
-		public OUT GetOuterData (WgContext Context)
-		{
-			OUT OuterData = (OUT)Context.AtDepth (OuterBlockDataDepth).Data;
-			return OuterData;
-		}
-	}
-
-	public class For<T, F> : InnerBlock<T> where F : For<T, F>, new () where T : class
+	public class For<T, F> : InnerBlock<T>, IGrain
+		where F : For<T, F>, new ()
+		where T : InnerBlockC
 	{
 		protected Action<WgContext, F> Init;
 		protected Func<WgContext, F, bool> Check;
@@ -79,10 +80,8 @@ namespace _01_Items
 			return This;
 		}
 
-		public override void Append (WgContext Context)
+		public void Append (WgContext Context)
 		{
-			base.Append (Context);
-
 			if (NextProc != null)
 			{
 				Context.ProceedTo (NextProc);
@@ -122,9 +121,6 @@ namespace _01_Items
 		//
 		protected Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
 		protected CallStackEntry CurrentEntry;
-		public bool IsLast { get; protected set; } = true;
-		public int CallStackDepth => CallStack.Count;
-		public CallStackEntry AtDepth (int Depth) => CallStack.Skip (CallStack.Count - Depth).First ();
 
 		protected CallStackEntry GetPrevEntry (int Depth = 1)
 		{
@@ -155,27 +151,24 @@ namespace _01_Items
 				// to keep data in stack
 				CallStack.Push (CallStackEntry.MakeEmpty (CurrentEntry.Data));
 
-				IsLast = true;
-				CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] { this, CurrentEntry.Data }, Thread.CurrentThread.CurrentCulture);
+				CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] { this, (object)CurrentEntry.Data }, Thread.CurrentThread.CurrentCulture);
 			}
 		}
 
 		//
-		public void ProceedToGeneric (Delegate NextProc, object Data, Delegate FurtherProc, uint StartAt = 0)
+		public void ProceedToGeneric (Delegate NextProc, InnerBlockC Data, Delegate FurtherProc, uint StartAt = 0)
 		{
-			object LastStackData = GetPrevEntry ()?.Data;
+			InnerBlockC LastStackData = GetPrevEntry ()?.Data;
 
 			if (Data == null)
 			{
-				if (IsLast)
-				{
-					Data = CurrentEntry.Data;
-				}
-				else
-				{
-					Data = LastStackData;
-				}
+				Data = LastStackData;
 			}
+
+			Data.OuterC = object.ReferenceEquals (Data, LastStackData)
+				? LastStackData.OuterC
+				: LastStackData
+				;
 
 			if (FurtherProc != null)
 			{
@@ -191,17 +184,17 @@ namespace _01_Items
 					Proc = NextProc,
 					Data = Data
 				});
-
-			IsLast = false;
 		}
 
 		//
 		public void ProceedTo<T, F> (Action<WgContext, T> NextProc, T Data, Action<WgContext, F> FurtherProc, uint StartAt = 0)
+			where T : InnerBlockC
 		{
 			ProceedToGeneric (NextProc, Data, FurtherProc, StartAt);
 		}
 
 		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = default(T))
+			where T : InnerBlockC
 		{
 			ProceedToGeneric (NextProc, Data, null, 0);
 		}
