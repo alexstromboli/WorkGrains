@@ -122,21 +122,6 @@ namespace _01_Items
 		protected Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
 		protected CallStackEntry CurrentEntry;
 
-		protected CallStackEntry GetPrevEntry (int Depth = 1)
-		{
-			if (Depth < 0 || Depth > CallStack.Count)
-			{
-				return null;
-			}
-
-			CallStackEntry Entry = Depth == 0
-				? CurrentEntry
-				: CallStack.Skip (Depth - 1).First ()
-				;
-
-			return Entry;
-		}
-
 		public void Run (WaitHandle ehStop)
 		{
 			while (!ehStop.WaitOne (0) && CallStack.Count > 0)
@@ -149,7 +134,12 @@ namespace _01_Items
 				}
 
 				// to keep data in stack
-				CallStack.Push (CallStackEntry.MakeEmpty (CurrentEntry.Data));
+				if (CallStack.Count == 0
+				    || !object.ReferenceEquals (CurrentEntry.Data, CallStack.Peek ().Data)
+				    )
+				{
+					CallStack.Push (CallStackEntry.MakeEmpty (CurrentEntry.Data));
+				}
 
 				CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] { this, (object)CurrentEntry.Data }, Thread.CurrentThread.CurrentCulture);
 			}
@@ -158,7 +148,10 @@ namespace _01_Items
 		//
 		public void ProceedToGeneric (Delegate NextProc, InnerBlockC Data, Delegate FurtherProc, uint StartAt = 0)
 		{
-			InnerBlockC LastStackData = GetPrevEntry ()?.Data;
+			InnerBlockC LastStackData = CallStack.Count == 0
+				? null
+				: CallStack.Peek ().Data
+				;
 
 			if (Data == null)
 			{
