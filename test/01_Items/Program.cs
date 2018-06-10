@@ -1,4 +1,8 @@
-﻿using System.Threading;
+﻿using System.IO;
+using System.Text;
+using System.Threading;
+
+using Newtonsoft.Json;
 
 namespace _01_Items
 {
@@ -6,11 +10,30 @@ namespace _01_Items
 	{
 		static void Main (string[] args)
 		{
-			S01 Data = new S01 {Numbers = new[] {5, 3, 8, 10, 1}};
+			WgContext Context;
+			DelegateConverter DelConv = new DelegateConverter ();
 
-			WgContext Context = new WgContext ();
-			Context.ProceedTo (Pieces.p01, Data);
+			//
+			string StateFilePath = Path.GetFullPath ("state.json");
+			Encoding enc = Encoding.UTF8;
+			if (File.Exists (StateFilePath))
+			{
+				string StateJson = File.ReadAllText (StateFilePath, enc);
+				Context = JsonConvert.DeserializeObject<WgContext> (StateJson, DelConv);
+			}
+			else
+			{
+				Context = new WgContext ();
+				S01 Data = new S01 { Numbers = new[] { 5, 3, 8, 10, 1, 7, 4, 2 } };
+				Context.ProceedTo (Pieces.p01, Data);
+			}
+
 			Context.Run (new ManualResetEvent (false));
+
+			{
+				string StateJson = JsonConvert.SerializeObject (Context, DelConv);
+				File.WriteAllText (StateFilePath, StateJson, enc);
+			}
 		}
 	}
 }

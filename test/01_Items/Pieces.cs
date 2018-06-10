@@ -24,7 +24,7 @@
 
 		public static void p02 (WgContext Context, S01 Data)
 		{
-			//Console.WriteLine ($"Task \"{Data.S}\" is over.");
+			System.IO.File.WriteAllText ("out.txt", string.Join (" ", Data.Numbers));
 		}
 
 		//
@@ -72,6 +72,9 @@
 				Data.Outer.Outer.Numbers[Data.j] = Data.Outer.Outer.Numbers[Data.Outer.i];
 				Data.Outer.Outer.Numbers[Data.Outer.i] = t;
 			}
+
+			// DEBUG
+			System.Threading.Thread.Sleep (500);
 		}
 	}
 }

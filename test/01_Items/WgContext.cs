@@ -4,6 +4,9 @@ using System.Threading;
 using System.Reflection;
 using System.Collections.Generic;
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 namespace _01_Items
 {
 	public class GrainInfo
@@ -23,11 +26,13 @@ namespace _01_Items
 
 	public class InnerBlockC
 	{
+		[JsonIgnore]
 		public object OuterC;
 	}
 
 	public class InnerBlock<T> : InnerBlockC
 	{
+		[JsonIgnore]
 		public T Outer
 		{
 			get { return (T)OuterC; }
@@ -38,7 +43,9 @@ namespace _01_Items
 
 	public class CallStackEntry
 	{
+		[JsonConverter (typeof (DelegateConverter))]
 		public Delegate Proc;
+		[JsonConverter (typeof (InnerBlockConverter))]
 		public InnerBlockC Data;
 
 		public static CallStackEntry MakeEmpty (InnerBlockC Data)
@@ -48,7 +55,7 @@ namespace _01_Items
 
 		public override string ToString ()
 		{
-			return $"{Proc?.Method.DeclaringType.Name ?? "null"}.{Proc?.Method.Name ?? "null"} - {Data.GetType().Name}";
+			return $"{Proc?.Method.DeclaringType.Name ?? "null"}.{Proc?.Method.Name ?? "null"} - {Data?.GetType().Name ?? "null"}";
 		}
 	}
 
@@ -56,11 +63,11 @@ namespace _01_Items
 		where F : For<T, F>, new ()
 		where T : InnerBlockC
 	{
-		protected Action<WgContext, F> Init;
-		protected Func<WgContext, F, bool> Check;
-		protected Action<WgContext, F> Step;
-		protected Action<WgContext, F> Body;
-		protected Action<WgContext, T> NextProc;
+		public Action<WgContext, F> Init;
+		public Func<WgContext, F, bool> Check;
+		public Action<WgContext, F> Step;
+		public Action<WgContext, F> Body;
+		public Action<WgContext, T> NextProc;
 
 		public static IGrain Generate (
 			Action<WgContext, F> Init,
@@ -116,17 +123,143 @@ namespace _01_Items
 		}
 	}
 
+	public class InnerBlockConverter : JsonConverter
+	{
+		public static readonly string TypePropName = "Type";
+		public static readonly string DataPropName = "Data";
+
+		public override bool CanConvert (Type objectType)
+		{
+			return objectType == typeof (InnerBlockC);
+		}
+
+		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
+		{
+			InnerBlockC Block = (InnerBlockC)value;
+			writer.WriteStartObject ();
+			writer.WritePropertyName (TypePropName);
+			serializer.Serialize (writer, Block.GetType ());
+			writer.WritePropertyName (DataPropName);
+			serializer.Serialize (writer, Block);
+			writer.WriteEndObject ();
+		}
+
+		public override object ReadJson (JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			if (reader.TokenType == JsonToken.Null)
+			{
+				return null;
+			}
+
+			JObject Obj = JObject.Load (reader);
+			Type DataType = Obj[TypePropName].ToObject<Type> ();
+
+			JToken DataToken = Obj[DataPropName];
+			InnerBlockC Data = DataToken.ToObject (DataType, serializer) as InnerBlockC;
+
+			return Data;
+		}
+	}
+
+	public class DelegateConverter : JsonConverter
+	{
+		public override bool CanConvert (Type objectType)
+		{
+			return WgContext.GetIfAction (objectType) != null
+				|| WgContext.GetIfPredicate (objectType) != null
+				;
+		}
+
+		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
+		{
+			Type ValueType = value.GetType ();
+			Type DataType = WgContext.GetIfAction (ValueType) ?? WgContext.GetIfPredicate (ValueType);
+			GrainInfo Info = WgContext.NameForDelegate ((Delegate)value, DataType);
+			serializer.Serialize (writer, Info);
+		}
+
+		public override object ReadJson (JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			GrainInfo Info = serializer.Deserialize<GrainInfo> (reader);
+			Delegate Proc = null;
+			Type DataType = null;
+
+			DataType = WgContext.GetIfAction (objectType);
+			if (objectType == typeof (Delegate) || DataType != null)
+			{
+				Proc = WgContext.ActionForName (Info);
+			}
+			else
+			{
+				DataType = WgContext.GetIfPredicate (objectType);
+
+				if (DataType != null)
+				{
+					Proc = WgContext.PredicateForName (Info);
+				}
+			}
+
+			return Proc;
+		}
+	}
+
+	public class WgContextConverter : JsonConverter
+	{
+		public override bool CanConvert (Type objectType)
+		{
+			return objectType == typeof (WgContext);
+		}
+
+		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
+		{
+			WgContext Context = (WgContext)value;
+			CallStackEntry[] Entries = Context.CallStack.ToArray ();
+
+			for (int i = 0; i < Entries.Length - 1; ++i)
+			{
+				if (object.ReferenceEquals (Entries[i].Data, Entries[i + 1].Data))
+				{
+					Entries[i].Data = null;
+				}
+			}
+
+			serializer.Serialize (writer, Entries);
+		}
+
+		public override object ReadJson (JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			CallStackEntry[] Entries = serializer.Deserialize<CallStackEntry[]> (reader);
+
+			for (int i = Entries.Length - 2; i >= 0; --i)
+			{
+				if (Entries[i].Data == null)
+				{
+					Entries[i].Data = Entries[i + 1].Data;
+				}
+				else
+				{
+					Entries[i].Data.OuterC = Entries[i + 1].Data;
+				}
+			}
+
+			Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> (Entries.Reverse ());
+
+			WgContext Context = new WgContext { CallStack = CallStack };
+
+			return Context;
+		}
+	}
+
+	[JsonConverter (typeof (WgContextConverter))]
 	public partial class WgContext
 	{
-		//
-		protected Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
-		protected CallStackEntry CurrentEntry;
+		public Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
 
 		public void Run (WaitHandle ehStop)
 		{
 			while (!ehStop.WaitOne (0) && CallStack.Count > 0)
 			{
-				CurrentEntry = CallStack.Pop ();
+				CallStackEntry CurrentEntry = CallStack.Pop ();
 
 				if (CurrentEntry.Proc == null)
 				{
@@ -142,6 +275,12 @@ namespace _01_Items
 				}
 
 				CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] { this, (object)CurrentEntry.Data }, Thread.CurrentThread.CurrentCulture);
+
+				// DEBUG
+				if ((DateTime.Now.Second % 10) > 6)
+				{
+					break;
+				}
 			}
 		}
 
