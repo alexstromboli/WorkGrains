@@ -47,10 +47,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Pieces.cs" />
+    <Compile Include="CodeBlockDataConverter.cs" />
+    <Compile Include="DelegateConverter.cs" />
+    <Compile Include="For.cs" />
+    <Compile Include="Loop.cs" />
+    <Compile Include="Pieces01.cs" />
+    <Compile Include="Pieces02.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="WgContext.cs" />
+    <Compile Include="WgContextConverter.cs" />
     <Compile Include="WgContext_utils.cs" />
+    <Compile Include="While.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

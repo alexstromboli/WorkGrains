@@ -27,19 +27,19 @@ namespace _01_Items
 		}
 
 		//
-		public static GrainInfo NameForDelegate (Delegate Block, Type T)
+		public static GrainInfo InfoFromDelegate (Delegate Proc, Type T)
 		{
 			return new GrainInfo
 				{
-					MethodAssembly = Block.Method.DeclaringType.Assembly.FullName,
-					MethodClass = Block.Method.DeclaringType.FullName,
-					MethodName = Block.Method.Name,
+					MethodAssembly = Proc.Method.DeclaringType.Assembly.FullName,
+					MethodClass = Proc.Method.DeclaringType.FullName,
+					MethodName = Proc.Method.Name,
 					DataAssembly = T.Assembly.FullName,
 					DataType = T.FullName
 				};
 		}
 
-		protected static Delegate DelegateForName (GrainInfo Info, Func<Type, Type> DelTypeMaker)
+		protected static Delegate DelegateFromInfo (GrainInfo Info, Func<Type, Type> DelTypeMaker)
 		{
 			if (Info == null)
 			{
@@ -60,14 +60,14 @@ namespace _01_Items
 
 		public static Delegate ActionForName (GrainInfo Info)
 		{
-			Delegate Proc = DelegateForName (Info, DT => typeof (Action<,>).MakeGenericType (typeof (WgContext), DT));
+			Delegate Proc = DelegateFromInfo (Info, DT => typeof (Action<,>).MakeGenericType (typeof (WgContext), DT));
 
 			return Proc;
 		}
 
 		public static Delegate PredicateForName (GrainInfo Info)
 		{
-			Delegate Proc = DelegateForName (Info, DT => typeof (Func<,,>).MakeGenericType (typeof (WgContext), DT, typeof (bool)));
+			Delegate Proc = DelegateFromInfo (Info, DT => typeof (Func<,,>).MakeGenericType (typeof (WgContext), DT, typeof (bool)));
 
 			return Proc;
 		}

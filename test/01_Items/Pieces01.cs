@@ -1,6 +1,6 @@
 ﻿namespace _01_Items
 {
-	public class S01 : InnerBlockC
+	public class S01 : CodeBlockDataC
 	{
 		public int[] Numbers;
 
@@ -15,7 +15,7 @@
 		}
 	}
 
-	public static class Pieces
+	public static class Pieces01
 	{
 		public static void p01 (WgContext Context, S01 Data)
 		{

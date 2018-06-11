@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 
@@ -24,8 +25,11 @@ namespace _01_Items
 			else
 			{
 				Context = new WgContext ();
-				S01 Data = new S01 { Numbers = new[] { 5, 3, 8, 10, 1, 7, 4, 2 } };
-				Context.ProceedTo (Pieces.p01, Data);
+				//S01 Data = new S01 { Numbers = new[] { 5, 3, 8, 10, 1, 7, 4, 2 } };
+				//Context.ProceedTo (Pieces01.p01, Data);
+
+				S02 Data = new S02 { Top = DateTime.Now.Second };
+				Context.ProceedTo (Pieces02.p01, Data);
 			}
 
 			Context.Run (new ManualResetEvent (false));
