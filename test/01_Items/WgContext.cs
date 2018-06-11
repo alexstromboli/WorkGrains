@@ -46,6 +46,8 @@ namespace _01_Items
 		public Delegate Proc;
 		[JsonConverter (typeof (CodeBlockDataConverter))]
 		public CodeBlockDataC Data;
+		[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
+		public string LoopHeader;
 
 		public static CallStackEntry MakeEmpty (CodeBlockDataC Data)
 		{
@@ -58,10 +60,39 @@ namespace _01_Items
 		}
 	}
 
+	public class WgLoopException : Exception
+	{
+		public enum LeapType
+		{
+			Break,
+			Continue
+		}
+
+		public LeapType Type;
+		public string LoopHeader;
+
+		public WgLoopException (LeapType Type, string LoopHeader)
+		{
+			this.Type = Type;
+			this.LoopHeader = LoopHeader ?? WgContext.DefaultLoopLabel;
+		}
+
+		public WgLoopException ()
+			: this (LeapType.Break, WgContext.DefaultLoopLabel)
+		{
+		}
+	}
+
 	[JsonConverter (typeof (WgContextConverter))]
 	public partial class WgContext
 	{
+		public static readonly string DefaultLoopLabel = "";
+
 		public Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
+		public WgLoopException Leap = null;
+
+		public bool IsLoopBreak => Leap != null && Leap.Type == WgLoopException.LeapType.Break;
+		public bool IsLoopContinue => Leap != null && Leap.Type == WgLoopException.LeapType.Continue;
 
 		public void Run (WaitHandle ehStop)
 		{
@@ -69,7 +100,12 @@ namespace _01_Items
 			{
 				CallStackEntry CurrentEntry = CallStack.Pop ();
 
-				if (CurrentEntry.Proc == null)
+				bool MustSkipForLeap = Leap != null
+					&& !(CurrentEntry.LoopHeader != null && Leap.LoopHeader == DefaultLoopLabel)
+					&& !(CurrentEntry.LoopHeader != null && Leap.LoopHeader == CurrentEntry.LoopHeader)
+					;
+
+				if (CurrentEntry.Proc == null || MustSkipForLeap)
 				{
 					continue;
 				}
@@ -82,7 +118,17 @@ namespace _01_Items
 					CallStack.Push (CallStackEntry.MakeEmpty (CurrentEntry.Data));
 				}
 
-				CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] { this, (object)CurrentEntry.Data }, Thread.CurrentThread.CurrentCulture);
+				try
+				{
+					CurrentEntry.Proc.Method.Invoke (null, BindingFlags.Default, null, new[] {this, (object)CurrentEntry.Data},
+						Thread.CurrentThread.CurrentCulture);
+
+					Leap = null;
+				}
+				catch (WgLoopException ex)
+				{
+					Leap = ex;
+				}
 
 				// DEBUG
 				if ((DateTime.Now.Second % 10) > 6)
@@ -92,8 +138,18 @@ namespace _01_Items
 			}
 		}
 
+		public void LoopBreak (string LoopHeader = null)
+		{
+			throw new WgLoopException (WgLoopException.LeapType.Break, LoopHeader ?? DefaultLoopLabel);
+		}
+
+		public void LoopContinue (string LoopHeader = null)
+		{
+			throw new WgLoopException (WgLoopException.LeapType.Continue, LoopHeader ?? DefaultLoopLabel);
+		}
+
 		//
-		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, Delegate FurtherProc, uint StartAt = 0)
+		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, Delegate FurtherProc, uint StartAt = 0, string LoopHeader = null)
 		{
 			CodeBlockDataC LastStackData = CallStack.Count == 0
 				? null
@@ -122,15 +178,16 @@ namespace _01_Items
 			CallStack.Push (new CallStackEntry
 				{
 					Proc = NextProc,
-					Data = Data
+					Data = Data,
+					LoopHeader = LoopHeader
 				});
 		}
 
 		//
-		public void ProceedTo<T, F> (Action<WgContext, T> NextProc, T Data, Action<WgContext, F> FurtherProc, uint StartAt = 0)
+		public void ProceedTo<T, F> (Action<WgContext, T> NextProc, T Data, Action<WgContext, F> FurtherProc, uint StartAt = 0, string LoopHeader = null)
 			where T : CodeBlockDataC
 		{
-			ProceedToGeneric (NextProc, Data, FurtherProc, StartAt);
+			ProceedToGeneric (NextProc, Data, FurtherProc, StartAt, LoopHeader);
 		}
 
 		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = default(T))

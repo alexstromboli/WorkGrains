@@ -30,6 +30,11 @@ namespace _01_Items
 			return This;
 		}
 
+		protected static void ScheduleNextStep (WgContext Context, F Data)
+		{
+			Context.ProceedTo<F, T> (MakeStep, Data, null, 0, WgContext.DefaultLoopLabel);
+		}
+
 		public void Append (WgContext Context)
 		{
 			if (NextProc != null)
@@ -37,7 +42,7 @@ namespace _01_Items
 				Context.ProceedTo (NextProc);
 			}
 
-			Context.ProceedTo (MakeStep, (F)this);
+			ScheduleNextStep (Context, (F)this);
 
 			if (Init != null)
 			{
@@ -47,11 +52,16 @@ namespace _01_Items
 
 		public static void MakeStep (WgContext Context, F Data)
 		{
+			if (Context.IsLoopBreak)
+			{
+				return;
+			}
+
 			bool Proceed = Data.Check?.Invoke (Context, Data) ?? true;
 
 			if (Proceed)
 			{
-				Context.ProceedTo (MakeStep, Data);
+				ScheduleNextStep (Context, Data);
 
 				if (Data.Step != null)
 				{
