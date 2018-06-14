@@ -3,11 +3,15 @@ using System.Linq;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace _01_Items
 {
 	public class WgContextConverter : JsonConverter
 	{
+		public static readonly string StackPropName = "Stack";
+		public static readonly string LeapPropName = "Leap";
+
 		public override bool CanConvert (Type objectType)
 		{
 			return objectType == typeof (WgContext);
@@ -26,12 +30,23 @@ namespace _01_Items
 				}
 			}
 
+			writer.WriteStartObject ();
+			writer.WritePropertyName (StackPropName);
 			serializer.Serialize (writer, Entries);
+
+			if (Context.Leap != null)
+			{
+				writer.WritePropertyName (LeapPropName);
+				serializer.Serialize (writer, Context.Leap);
+			}
+
+			writer.WriteEndObject ();
 		}
 
 		public override object ReadJson (JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
-			CallStackEntry[] Entries = serializer.Deserialize<CallStackEntry[]> (reader);
+			JToken Raw = JToken.Load (reader);
+			CallStackEntry[] Entries = Raw[StackPropName].ToObject<CallStackEntry[]> (serializer);
 
 			for (int i = Entries.Length - 2; i >= 0; --i)
 			{
@@ -47,7 +62,20 @@ namespace _01_Items
 
 			Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> (Entries.Reverse ());
 
-			WgContext Context = new WgContext { CallStack = CallStack };
+			//
+			var RawLeap = Raw[LeapPropName];
+			LeapInfo Leap = null;
+			if (RawLeap != null)
+			{
+				Leap = RawLeap.ToObject<LeapInfo> (serializer);
+			}
+
+			//
+			WgContext Context = new WgContext
+				{
+					CallStack = CallStack,
+					Leap = Leap
+				};
 
 			return Context;
 		}

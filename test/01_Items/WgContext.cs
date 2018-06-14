@@ -60,25 +60,33 @@ namespace _01_Items
 		}
 	}
 
-	public class WgLoopException : Exception
+	public class LeapInfo
 	{
 		public enum LeapType
 		{
-			Break,
+			Break = 1,
 			Continue
 		}
 
 		public LeapType Type;
 		public string LoopHeader;
+	}
 
-		public WgLoopException (LeapType Type, string LoopHeader)
+	public class WgLoopException : Exception
+	{
+		public LeapInfo LeapInfo;
+
+		public WgLoopException (LeapInfo.LeapType Type, string LoopHeader)
 		{
-			this.Type = Type;
-			this.LoopHeader = LoopHeader ?? WgContext.DefaultLoopLabel;
+			LeapInfo = new LeapInfo
+				{
+					Type = Type,
+					LoopHeader = LoopHeader ?? WgContext.DefaultLoopLabel
+				};
 		}
 
 		public WgLoopException ()
-			: this (LeapType.Break, WgContext.DefaultLoopLabel)
+			: this (LeapInfo.LeapType.Break, WgContext.DefaultLoopLabel)
 		{
 		}
 	}
@@ -89,10 +97,11 @@ namespace _01_Items
 		public static readonly string DefaultLoopLabel = "";
 
 		public Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
-		public WgLoopException Leap = null;
+		[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
+		public LeapInfo Leap = null;
 
-		public bool IsLoopBreak => Leap != null && Leap.Type == WgLoopException.LeapType.Break;
-		public bool IsLoopContinue => Leap != null && Leap.Type == WgLoopException.LeapType.Continue;
+		public bool IsLoopBreak => Leap != null && Leap.Type == LeapInfo.LeapType.Break;
+		public bool IsLoopContinue => Leap != null && Leap.Type == LeapInfo.LeapType.Continue;
 
 		public void Run (WaitHandle ehStop)
 		{
@@ -125,9 +134,17 @@ namespace _01_Items
 
 					Leap = null;
 				}
-				catch (WgLoopException ex)
+				catch (TargetInvocationException ex)
 				{
-					Leap = ex;
+					if (ex.InnerException is WgLoopException)
+					{
+						Leap = ((WgLoopException)ex.InnerException).LeapInfo;
+					}
+					else
+					{
+						// here: handle
+						throw;
+					}
 				}
 
 				// DEBUG
@@ -140,12 +157,12 @@ namespace _01_Items
 
 		public void LoopBreak (string LoopHeader = null)
 		{
-			throw new WgLoopException (WgLoopException.LeapType.Break, LoopHeader ?? DefaultLoopLabel);
+			throw new WgLoopException (LeapInfo.LeapType.Break, LoopHeader ?? DefaultLoopLabel);
 		}
 
 		public void LoopContinue (string LoopHeader = null)
 		{
-			throw new WgLoopException (WgLoopException.LeapType.Continue, LoopHeader ?? DefaultLoopLabel);
+			throw new WgLoopException (LeapInfo.LeapType.Continue, LoopHeader ?? DefaultLoopLabel);
 		}
 
 		//
