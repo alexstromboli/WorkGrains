@@ -84,23 +84,20 @@ namespace _01_Items
 					LoopHeader = LoopHeader ?? WgContext.DefaultLoopLabel
 				};
 		}
-
-		public WgLoopException ()
-			: this (LeapInfo.LeapType.Break, WgContext.DefaultLoopLabel)
-		{
-		}
 	}
 
-	[JsonConverter (typeof (WgContextConverter))]
 	public partial class WgContext
 	{
 		public static readonly string DefaultLoopLabel = "";
 
+		[JsonConverter (typeof (CallStackEntryStackConverter))]
 		public Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
 		[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
 		public LeapInfo Leap = null;
 
+		[JsonIgnore]
 		public bool IsLoopBreak => Leap != null && Leap.Type == LeapInfo.LeapType.Break;
+		[JsonIgnore]
 		public bool IsLoopContinue => Leap != null && Leap.Type == LeapInfo.LeapType.Continue;
 
 		public void Run (WaitHandle ehStop)

@@ -55,7 +55,7 @@
     <Compile Include="Pieces02.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="WgContext.cs" />
-    <Compile Include="WgContextConverter.cs" />
+    <Compile Include="CallStackEntryStackConverter.cs" />
     <Compile Include="WgContext_utils.cs" />
     <Compile Include="While.cs" />
   </ItemGroup>
