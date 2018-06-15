@@ -19,7 +19,8 @@ namespace _01_Items
 		{
 			Data.Sum = 0;
 			Data.Numbers = new List<int> ();
-			Context.ProceedTo (S02._while01.Generate (While_01_Check, While_01_Body, p02));
+			Context.ProceedTo<S02> (p02);
+			Context.ProceedTo (S02._while01.Generate (While_01_Check, While_01_Body));
 		}
 
 		public static void p02 (WgContext Context, S02 Data)

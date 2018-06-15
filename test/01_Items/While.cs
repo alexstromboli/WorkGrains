@@ -8,34 +8,26 @@ namespace _01_Items
 	{
 		public Func<WgContext, F, bool> Check;
 		public Action<WgContext, F> Body;
-		public Action<WgContext, T> NextProc;
 
 		public static IGrain Generate (
 			Func<WgContext, F, bool> Check,
-			Action<WgContext, F> Body,
-			Action<WgContext, T> NextProc = null
+			Action<WgContext, F> Body
 		)
 		{
 			F This = new F ();
 			This.Check = Check;
 			This.Body = Body;
-			This.NextProc = NextProc;
 
 			return This;
 		}
 
 		protected static void ScheduleNextStep (WgContext Context, F Data)
 		{
-			Context.ProceedTo<F, T> (MakeStep, Data, null, 0, WgContext.DefaultLoopLabel);
+			Context.ProceedTo (MakeStep, Data, 0, WgContext.DefaultLoopLabel);
 		}
 
 		public void Append (WgContext Context)
 		{
-			if (NextProc != null)
-			{
-				Context.ProceedTo (NextProc);
-			}
-
 			ScheduleNextStep (Context, (F)this);
 		}
 

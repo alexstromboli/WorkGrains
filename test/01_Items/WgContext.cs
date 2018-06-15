@@ -163,7 +163,7 @@ namespace _01_Items
 		}
 
 		//
-		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, Delegate FurtherProc, uint StartAt = 0, string LoopHeader = null)
+		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, uint StartAt = 0, string LoopHeader = null)
 		{
 			CodeBlockDataC LastStackData = CallStack.Count == 0
 				? null
@@ -180,15 +180,6 @@ namespace _01_Items
 				: LastStackData
 				;
 
-			if (FurtherProc != null)
-			{
-				CallStack.Push (new CallStackEntry
-					{
-						Proc = FurtherProc,
-						Data = LastStackData
-					});
-			}
-
 			CallStack.Push (new CallStackEntry
 				{
 					Proc = NextProc,
@@ -198,16 +189,10 @@ namespace _01_Items
 		}
 
 		//
-		public void ProceedTo<T, F> (Action<WgContext, T> NextProc, T Data, Action<WgContext, F> FurtherProc, uint StartAt = 0, string LoopHeader = null)
+		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = null, uint StartAt = 0, string LoopHeader = null)
 			where T : CodeBlockDataC
 		{
-			ProceedToGeneric (NextProc, Data, FurtherProc, StartAt, LoopHeader);
-		}
-
-		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = default(T))
-			where T : CodeBlockDataC
-		{
-			ProceedToGeneric (NextProc, Data, null, 0);
+			ProceedToGeneric (NextProc, Data, StartAt, LoopHeader);
 		}
 
 		public void ProceedTo (IGrain Grain)

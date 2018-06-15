@@ -19,7 +19,8 @@
 	{
 		public static void p01 (WgContext Context, S01 Data)
 		{
-			Context.ProceedTo (S01._for01.Generate (For_01_Init, For_01_Check, For_01_Step, For_01_Body, p02));
+			Context.ProceedTo<S01> (p02);
+			Context.ProceedTo (S01._for01.Generate (For_01_Init, For_01_Check, For_01_Step, For_01_Body));
 		}
 
 		public static void p02 (WgContext Context, S01 Data)
