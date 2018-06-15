@@ -7,27 +7,33 @@ using Newtonsoft.Json;
 
 namespace _01_Items
 {
+	// delegate serialization structure
 	public class GrainInfo
 	{
+		// action
 		public string MethodAssembly;
 		public string MethodClass;
 		public string MethodName;
 
+		// data
 		public string DataAssembly;
 		public string DataType;
 	}
 
+	// stackable object (loop, code block, etc.)
 	public interface IGrain
 	{
 		void Append (WgContext Context);
 	}
 
+	// code block's external data reference
 	public class CodeBlockDataC
 	{
 		[JsonIgnore]
 		public CodeBlockDataC OuterC;
 	}
 
+	// code block's external data reference, typified
 	public class CodeBlockData<T> : CodeBlockDataC
 		where T : CodeBlockDataC
 	{
@@ -60,6 +66,7 @@ namespace _01_Items
 		}
 	}
 
+	// 'break' or 'continue'
 	public class LeapInfo
 	{
 		public enum LeapType
@@ -72,6 +79,7 @@ namespace _01_Items
 		public string LoopHeader;
 	}
 
+	// exception to force 'break' or 'continue'
 	public class WgLoopException : Exception
 	{
 		public LeapInfo LeapInfo;
@@ -86,20 +94,24 @@ namespace _01_Items
 		}
 	}
 
+	// code block execution context
 	public partial class WgContext
 	{
 		public static readonly string DefaultLoopLabel = "";
 
+		// call stack
 		[JsonConverter (typeof (CallStackEntryStackConverter))]
 		public Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
 		[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
 		public LeapInfo Leap = null;
 
+		// 'break' or 'continue' flags
 		[JsonIgnore]
 		public bool IsLoopBreak => Leap != null && Leap.Type == LeapInfo.LeapType.Break;
 		[JsonIgnore]
 		public bool IsLoopContinue => Leap != null && Leap.Type == LeapInfo.LeapType.Continue;
 
+		// execution loop
 		public void Run (WaitHandle ehStop)
 		{
 			while (!ehStop.WaitOne (0) && CallStack.Count > 0)
@@ -139,7 +151,7 @@ namespace _01_Items
 					}
 					else
 					{
-						// here: handle
+						// here: handle, store and forward
 						throw;
 					}
 				}
@@ -162,7 +174,7 @@ namespace _01_Items
 			throw new WgLoopException (LeapInfo.LeapType.Continue, LoopHeader ?? DefaultLoopLabel);
 		}
 
-		//
+		// push next action
 		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, uint StartAt = 0, string LoopHeader = null)
 		{
 			CodeBlockDataC LastStackData = CallStack.Count == 0
@@ -188,13 +200,14 @@ namespace _01_Items
 				});
 		}
 
-		//
+		// push next action, typified
 		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = null, uint StartAt = 0, string LoopHeader = null)
 			where T : CodeBlockDataC
 		{
 			ProceedToGeneric (NextProc, Data, StartAt, LoopHeader);
 		}
 
+		// push next action-aware block
 		public void ProceedTo (IGrain Grain)
 		{
 			Grain.Append (this);

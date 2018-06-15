@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 
 namespace _01_Items
 {
+	// stack entry delegate (de-)serializer
 	public class DelegateConverter : JsonConverter
 	{
 		public override bool CanConvert (Type objectType)
@@ -28,13 +29,13 @@ namespace _01_Items
 			Type DataType = null;
 
 			DataType = WgContext.GetIfAction (objectType);
-			if (objectType == typeof (Delegate) || DataType != null)
+			if (objectType == typeof (Delegate) || DataType != null)		// if Action<WgContext,T> or a generic delegate
 			{
 				Proc = WgContext.ActionForName (Info);
 			}
 			else
 			{
-				DataType = WgContext.GetIfPredicate (objectType);
+				DataType = WgContext.GetIfPredicate (objectType);		// if predicate
 
 				if (DataType != null)
 				{

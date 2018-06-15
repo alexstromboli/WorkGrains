@@ -1,13 +1,15 @@
 using System;
 
+// 'While' generic
+
 namespace _01_Items
 {
-	public class While<T, F> : Loop<T>, IGrain
+	public abstract class While<T, F> : Loop<T>, IGrain     // F is the actual loop type
 		where F : While<T, F>, new ()
 		where T : CodeBlockDataC
 	{
-		public Func<WgContext, F, bool> Check;
-		public Action<WgContext, F> Body;
+		public Func<WgContext, F, bool> Check;	// loop condition
+		public Action<WgContext, F> Body;		// iteration code block
 
 		public static IGrain Generate (
 			Func<WgContext, F, bool> Check,
@@ -21,6 +23,7 @@ namespace _01_Items
 			return This;
 		}
 
+		// first or subsequent iteration scheduling
 		protected static void ScheduleNextStep (WgContext Context, F Data)
 		{
 			Context.ProceedTo (MakeStep, Data, 0, WgContext.DefaultLoopLabel);
@@ -38,12 +41,14 @@ namespace _01_Items
 				return;
 			}
 
+			// check if condition holds
 			bool Proceed = Data.Check?.Invoke (Context, Data) ?? true;
 
 			if (Proceed)
 			{
 				ScheduleNextStep (Context, Data);
 
+				// iteration body
 				if (Data.Body != null)
 				{
 					Context.ProceedTo (Data.Body);

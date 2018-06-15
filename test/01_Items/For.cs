@@ -1,8 +1,10 @@
 using System;
 
+// 'For' generic
+
 namespace _01_Items
 {
-	public class For<T, F> : Loop<T>, IGrain
+	public abstract class For<T, F> : Loop<T>, IGrain		// F is the actual loop type
 		where F : For<T, F>, new ()
 		where T : CodeBlockDataC
 	{
@@ -27,6 +29,7 @@ namespace _01_Items
 			return This;
 		}
 
+		// first or subsequent iteration scheduling
 		protected static void ScheduleNextStep (WgContext Context, F Data)
 		{
 			Context.ProceedTo (MakeStep, Data, 0, WgContext.DefaultLoopLabel);
@@ -36,12 +39,14 @@ namespace _01_Items
 		{
 			ScheduleNextStep (Context, (F)this);
 
+			// initialization
 			if (Init != null)
 			{
 				Context.ProceedTo (Init);
 			}
 		}
 
+		// loop header
 		public static void MakeStep (WgContext Context, F Data)
 		{
 			if (Context.IsLoopBreak)
@@ -49,17 +54,20 @@ namespace _01_Items
 				return;
 			}
 
+			// check if condition holds
 			bool Proceed = Data.Check?.Invoke (Context, Data) ?? true;
 
 			if (Proceed)
 			{
 				ScheduleNextStep (Context, Data);
 
+				// increment
 				if (Data.Step != null)
 				{
 					Context.ProceedTo (Data.Step);
 				}
 
+				// iteration body
 				if (Data.Body != null)
 				{
 					Context.ProceedTo (Data.Body);

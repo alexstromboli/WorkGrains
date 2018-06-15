@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Reflection;
 
+// delegates analysis
+// serialization/deserialization
+
 namespace _01_Items
 {
 	public partial class WgContext
 	{
+		// if DelegateType is Action<WgContext,T>, then find and return T
+		// else null
 		public static Type GetIfAction (Type DelegateType)
 		{
 			return DelegateType.IsGenericType
@@ -15,6 +20,8 @@ namespace _01_Items
 				;
 		}
 
+		// if DelegateType is Func<WgContext,T,bool>, then find and return T
+		// else null
 		public static Type GetIfPredicate (Type DelegateType)
 		{
 			return DelegateType.IsGenericType
@@ -26,7 +33,7 @@ namespace _01_Items
 				;
 		}
 
-		//
+		// delegate serialization
 		public static GrainInfo InfoFromDelegate (Delegate Proc, Type T)
 		{
 			return new GrainInfo
@@ -39,6 +46,7 @@ namespace _01_Items
 				};
 		}
 
+		// delegate deserialization
 		protected static Delegate DelegateFromInfo (GrainInfo Info, Func<Type, Type> DelTypeMaker)
 		{
 			if (Info == null)

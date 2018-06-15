@@ -1,4 +1,6 @@
-﻿namespace _01_Items
+﻿// 'For' test
+
+namespace _01_Items
 {
 	public class S01 : CodeBlockDataC
 	{
@@ -19,6 +21,7 @@
 	{
 		public static void p01 (WgContext Context, S01 Data)
 		{
+			// stacking sub-blocks
 			Context.ProceedTo<S01> (p02);
 			Context.ProceedTo (S01._for01.Generate (For_01_Init, For_01_Check, For_01_Step, For_01_Body));
 		}
@@ -28,7 +31,7 @@
 			System.IO.File.WriteAllText ("out.txt", string.Join (" ", Data.Numbers));
 		}
 
-		//
+		// outer 'for'
 		public static void For_01_Init (WgContext Context, S01._for01 Data)
 		{
 			Data.i = 0;
@@ -49,7 +52,7 @@
 			Context.ProceedTo (S01._for02.Generate (For_02_Init, For_02_Check, For_02_Step, For_02_Body));
 		}
 
-		//
+		// nested 'for'
 		public static void For_02_Init (WgContext Context, S01._for02 Data)
 		{
 			Data.j = Data.Outer.i + 1;

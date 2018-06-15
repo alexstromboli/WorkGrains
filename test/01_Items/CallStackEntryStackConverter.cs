@@ -13,6 +13,7 @@ namespace _01_Items
 			return objectType == typeof (Stack<CallStackEntry>);
 		}
 
+		// clean repeating data references
 		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
 		{
 			Stack<CallStackEntry> Stack = (Stack<CallStackEntry>)value;
@@ -29,6 +30,7 @@ namespace _01_Items
 			serializer.Serialize (writer, Entries);
 		}
 
+		// restore repeating data and external data references
 		public override object ReadJson (JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
 			CallStackEntry[] Entries = serializer.Deserialize<CallStackEntry[]> (reader);

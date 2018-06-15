@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace _01_Items
 {
+	// stack entry (de-)serializer
 	public class CodeBlockDataConverter : JsonConverter
 	{
 		public static readonly string TypePropName = "Type";
