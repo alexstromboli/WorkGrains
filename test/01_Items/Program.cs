@@ -1,7 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Threading;
+using System.Collections.Generic;
 
 using Newtonsoft.Json;
 
@@ -25,11 +25,15 @@ namespace _01_Items
 			else
 			{
 				Context = new WgContext ();
+
 				//S01 Data = new S01 { Numbers = new[] { 5, 3, 8, 10, 1, 7, 4, 2 } };
 				//Context.ProceedTo (Pieces01.p01, Data);
 
-				S02 Data = new S02 { Top = DateTime.Now.Second };
-				Context.ProceedTo (Pieces02.p01, Data);
+				//S02 Data = new S02 { Top = DateTime.Now.Second };
+				//Context.ProceedTo (Pieces02.p01, Data);
+
+				S03 Data = new S03 { Lines = new List<string> { "report", "story", "lines", "text", "narrative", "plot" } };
+				Context.ProceedTo (Pieces03.p01, Data);
 			}
 
 			Context.Run (new ManualResetEvent (false));

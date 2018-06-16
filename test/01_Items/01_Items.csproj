@@ -50,9 +50,11 @@
     <Compile Include="CodeBlockDataConverter.cs" />
     <Compile Include="DelegateConverter.cs" />
     <Compile Include="For.cs" />
+    <Compile Include="ForEach.cs" />
     <Compile Include="Loop.cs" />
     <Compile Include="Pieces01.cs" />
     <Compile Include="Pieces02.cs" />
+    <Compile Include="Pieces03.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="WgContext.cs" />
     <Compile Include="CallStackEntryStackConverter.cs" />
