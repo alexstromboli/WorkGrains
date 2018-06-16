@@ -16,17 +16,20 @@ namespace _01_Items
 		where F : ForEach<T, CNT, EL, F>, new ()
 	{
 		public CNT Container;
+		public Action<WgContext, F> Step;
 		public Action<WgContext, F> Body;
-		public int Counter;
+		public int CurrentIndex;
 		public EL CurrentElement;
 
 		public static IGrain Generate (
 			CNT Container,
+			Action<WgContext, F> Step,
 			Action<WgContext, F> Body
 		)
 		{
 			F This = new F ();
 			This.Container = Container;
+			This.Step = Step;
 			This.Body = Body;
 
 			return This;
@@ -40,7 +43,7 @@ namespace _01_Items
 
 		public void Append (WgContext Context)
 		{
-			Counter = 0;
+			CurrentIndex = -1;
 			ScheduleNextStep (Context, (F)this);
 		}
 
@@ -53,20 +56,26 @@ namespace _01_Items
 			}
 
 			// check if continuation condition holds
-			bool Proceed = Data.Counter < Data.Container.Count;
+			++Data.CurrentIndex;
+			bool Proceed = Data.CurrentIndex < Data.Container.Count;
 
 			if (Proceed)
 			{
 				ScheduleNextStep (Context, Data);
 
 				// increment
-				Data.CurrentElement = Data.Container[Data.Counter];
-				++Data.Counter;
+				Data.CurrentElement = Data.Container[Data.CurrentIndex];
 
 				// iteration body
 				if (Data.Body != null)
 				{
 					Context.ProceedTo (Data.Body);
+				}
+
+				// step
+				if (Data.Step != null)
+				{
+					Context.ProceedTo (Data.Step);
 				}
 			}
 		}

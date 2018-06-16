@@ -11,6 +11,7 @@ namespace _01_Items
 
 		public class _foreach01 : ForEach<S03, List<string>, string, _foreach01>
 		{
+			public string s;
 		}
 	}
 
@@ -23,7 +24,7 @@ namespace _01_Items
 
 			// stacking sub-blocks
 			Context.ProceedTo<S03> (p02);
-			Context.ProceedTo (S03._foreach01.Generate (Data.Lines, ForEach_01_Body));
+			Context.ProceedTo (S03._foreach01.Generate (Data.Lines, ForEach_01_Step, ForEach_01_Body));
 		}
 
 		public static void p02 (WgContext Context, S03 Data)
@@ -32,11 +33,16 @@ namespace _01_Items
 		}
 
 		//
+		public static void ForEach_01_Step (WgContext Context, S03._foreach01 Data)
+		{
+			Data.s = Data.CurrentElement;
+		}
+
 		public static void ForEach_01_Body (WgContext Context, S03._foreach01 Data)
 		{
-			if (Data.CurrentElement.Length > 4)
+			if (Data.s.Length > 4)
 			{
-				Data.Outer.Result.Add (Data.CurrentElement);
+				Data.Outer.Result.Add (Data.s);
 			}
 		}
 	}
