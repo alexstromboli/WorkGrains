@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+using Newtonsoft.Json;
+
 // 'ForEach' generic
 // enumerates an array, not a generic IEnumerable, since the container needs to be serializable
 
@@ -12,25 +14,29 @@ namespace _01_Items
 	// T is outer block data type
 	public abstract class ForEach<T, CNT, EL, F> : Loop<T>, IGrain
 		where T : CodeBlockDataC
-		where CNT : IList<EL>
+		where CNT : class, IList<EL>
 		where F : ForEach<T, CNT, EL, F>, new ()
 	{
-		public CNT Container;
+		public Action<WgContext, F> GetContainer;
 		public Action<WgContext, F> Step;
 		public Action<WgContext, F> Body;
 		public int CurrentIndex;
 		public EL CurrentElement;
 
+		[JsonIgnore]
+		public CNT Container;
+
 		public static IGrain Generate (
-			CNT Container,
+			Action<WgContext, F> GetContainer,
 			Action<WgContext, F> Step,
 			Action<WgContext, F> Body
 		)
 		{
 			F This = new F ();
-			This.Container = Container;
+			This.GetContainer = GetContainer;
 			This.Step = Step;
 			This.Body = Body;
+			This.Container = null;
 
 			return This;
 		}
@@ -51,6 +57,17 @@ namespace _01_Items
 		public static void MakeStep (WgContext Context, F Data)
 		{
 			if (Context.IsLoopBreak)
+			{
+				return;
+			}
+
+			// retrieve container
+			if (Data.Container == null)
+			{
+				Data.GetContainer (Context, Data);
+			}
+
+			if (Data.Container == null)
 			{
 				return;
 			}
