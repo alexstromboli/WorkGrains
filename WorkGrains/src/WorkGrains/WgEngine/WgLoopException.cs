@@ -12,7 +12,7 @@ namespace WorkGrains
 			LeapInfo = new LeapInfo
 				{
 					Type = Type,
-					LoopHeader = LoopHeader ?? WgContext.DefaultLoopLabel
+					LoopHeader = LoopHeader ?? Work.DefaultLoopLabel
 				};
 		}
 	}

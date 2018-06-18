@@ -3,28 +3,25 @@ using System.Threading;
 using System.Reflection;
 using System.Collections.Generic;
 
-using Newtonsoft.Json;
-
-using WorkGrains.Converters;
-
 namespace WorkGrains
 {
 	// code block execution context
 	public partial class WgContext
 	{
-		public static readonly string DefaultLoopLabel = "";
-
-		// call stack
-		[JsonConverter (typeof (CallStackEntryStackConverter))]
-		public Stack<CallStackEntry> CallStack = new Stack<CallStackEntry> ();
-		[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
-		public LeapInfo Leap = null;
-
 		// 'break' or 'continue' flags
-		[JsonIgnore]
 		public bool IsLoopBreak => Leap != null && Leap.Type == LeapInfo.LeapType.Break;
-		[JsonIgnore]
 		public bool IsLoopContinue => Leap != null && Leap.Type == LeapInfo.LeapType.Continue;
+
+		protected Work Work;
+		protected Stack<CallStackEntry> CallStack;
+		protected LeapInfo Leap;
+
+		public WgContext (Work Work)
+		{
+			this.Work = Work;
+			this.CallStack = Work.CallStack;
+			this.Leap = Work.Leap;
+		}
 
 		// execution loop
 		public void Run (WaitHandle ehStop)
@@ -34,7 +31,7 @@ namespace WorkGrains
 				CallStackEntry CurrentEntry = CallStack.Pop ();
 
 				bool MustSkipForLeap = Leap != null
-					&& !(CurrentEntry.LoopHeader != null && Leap.LoopHeader == DefaultLoopLabel)
+					&& !(CurrentEntry.LoopHeader != null && Leap.LoopHeader == Work.DefaultLoopLabel)
 					&& !(CurrentEntry.LoopHeader != null && Leap.LoopHeader == CurrentEntry.LoopHeader)
 					;
 
@@ -81,12 +78,12 @@ namespace WorkGrains
 
 		public void LoopBreak (string LoopHeader = null)
 		{
-			throw new WgLoopException (LeapInfo.LeapType.Break, LoopHeader ?? DefaultLoopLabel);
+			throw new WgLoopException (LeapInfo.LeapType.Break, LoopHeader ?? Work.DefaultLoopLabel);
 		}
 
 		public void LoopContinue (string LoopHeader = null)
 		{
-			throw new WgLoopException (LeapInfo.LeapType.Continue, LoopHeader ?? DefaultLoopLabel);
+			throw new WgLoopException (LeapInfo.LeapType.Continue, LoopHeader ?? Work.DefaultLoopLabel);
 		}
 
 		// push next action
