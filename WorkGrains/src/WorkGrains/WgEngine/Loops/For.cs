@@ -32,7 +32,7 @@ namespace WorkGrains.Loops
 		// first or subsequent iteration scheduling
 		protected static void ScheduleNextStep (WgContext Context, F Data)
 		{
-			Context.ProceedTo (MakeStep, Data, 0, Work.DefaultLoopLabel);
+			Context.ProceedTo (MakeStep, Data, null, Work.DefaultLoopLabel);
 		}
 
 		public void Append (WgContext Context)

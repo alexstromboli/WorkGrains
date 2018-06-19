@@ -59,8 +59,10 @@
     <Compile Include="WgContext.cs" />
     <Compile Include="WgContext_utils.cs" />
     <Compile Include="WgEngine.cs" />
+    <Compile Include="WgEngine_utils.cs" />
     <Compile Include="WgLoopException.cs" />
     <Compile Include="Work.cs" />
+    <Compile Include="WorkSchedule.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

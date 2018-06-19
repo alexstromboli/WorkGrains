@@ -87,7 +87,7 @@ namespace WorkGrains
 		}
 
 		// push next action
-		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, uint StartAt = 0, string LoopHeader = null)
+		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, WorkSchedule StartAt = null, string LoopHeader = null)
 		{
 			CodeBlockDataC LastStackData = CallStack.Count == 0
 				? null
@@ -113,7 +113,7 @@ namespace WorkGrains
 		}
 
 		// push next action, typified
-		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = null, uint StartAt = 0, string LoopHeader = null)
+		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = null, WorkSchedule StartAt = null, string LoopHeader = null)
 			where T : CodeBlockDataC
 		{
 			ProceedToGeneric (NextProc, Data, StartAt, LoopHeader);
@@ -123,6 +123,12 @@ namespace WorkGrains
 		public void ProceedTo (IGrain Grain)
 		{
 			Grain.Append (this);
+		}
+
+		// postpone
+		public void RescheduleWork ()
+		{
+			throw new NotImplementedException ();
 		}
 	}
 }

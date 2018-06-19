@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace WorkGrains
 {
-    public class WgEngine
+    public partial class WgEngine
     {
 		public List<Work> Works;
 
@@ -20,7 +20,7 @@ namespace WorkGrains
 			throw new NotImplementedException ();
 		}
 
-		public void StartWork (Delegate Proc, object Data, int StartAt = 0)
+		public void StartWork (Delegate Proc, object Data, WorkSchedule StartAt = null)
 		{
 			throw new NotImplementedException ();
 		}
