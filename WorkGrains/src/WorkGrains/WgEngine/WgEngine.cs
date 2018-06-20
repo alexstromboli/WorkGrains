@@ -6,14 +6,23 @@ using Newtonsoft.Json;
 
 namespace WorkGrains
 {
-    public partial class WgEngine
-    {
+	public partial class WgEngine : IDisposable
+	{
 		public List<Work> Works;
 
 		[JsonIgnore]
 		protected SortedDictionary<int, Work> ByStartAt;
 		[JsonIgnore]
 		protected SortedDictionary<Guid, Work> BySignalId;
+
+		public WgEngine (string WorkDirPath)
+		{
+		}
+
+		public void Dispose ()
+		{
+			throw new NotImplementedException ();
+		}
 
 		public void Run (WaitHandle whStop)
 		{

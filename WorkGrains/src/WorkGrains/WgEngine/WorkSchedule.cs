@@ -4,14 +4,21 @@ namespace WorkGrains
 {
 	public class WorkSchedule
 	{
+		public Guid? SignalId = null;
+		public int UnixTime = 0;
+		public bool Fork = false;
+
 		public static WorkSchedule Immediate ()
 		{
-			throw new NotImplementedException ();
+			return null;
 		}
 
 		public static WorkSchedule WaitTillUnix (int UnixTime)
 		{
-			throw new NotImplementedException ();
+			return new WorkSchedule
+				{
+					UnixTime = UnixTime
+				};
 		}
 
 		public static WorkSchedule WaitFor (int Seconds)
@@ -38,7 +45,11 @@ namespace WorkGrains
 
 		public static WorkSchedule AtSignal (bool Fork = false)
 		{
-			throw new NotImplementedException ();
+			return new WorkSchedule
+				{
+					SignalId = Guid.NewGuid (),
+					Fork = Fork
+				};
 		}
 	}
 }
