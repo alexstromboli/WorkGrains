@@ -14,6 +14,8 @@ namespace WorkGrains
 		public CodeBlockDataC Data;
 		[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
 		public string LoopHeader;
+		[JsonProperty (DefaultValueHandling = DefaultValueHandling.Ignore)]
+		public bool IsFinalizing = false;
 
 		public static CallStackEntry MakeEmpty (CodeBlockDataC Data)
 		{

@@ -29,16 +29,16 @@ namespace WorkGrains
 		}
 
 		// push next action
-		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, WorkSchedule StartAt = null, string LoopHeader = null)
+		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, bool IsFinalizing = false, string LoopHeader = null)
 		{
-			Work.ProceedToGeneric (NextProc, Data, StartAt, LoopHeader);
+			Work.ProceedToGeneric (NextProc, Data, IsFinalizing, LoopHeader);
 		}
 
 		// push next action, typified
-		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = null, WorkSchedule StartAt = null, string LoopHeader = null)
+		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = null, bool IsFinalizing = false, string LoopHeader = null)
 			where T : CodeBlockDataC
 		{
-			Work.ProceedTo (NextProc, Data, StartAt, LoopHeader);
+			Work.ProceedTo (NextProc, Data, IsFinalizing, LoopHeader);
 		}
 
 		// push next action-aware block

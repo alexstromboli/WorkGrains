@@ -14,9 +14,13 @@ namespace WorkGrains
 		public static readonly string DefaultLoopLabel = "";
 
 		public Guid Id;
+		public WorkSchedule Schedule;
+
+		[JsonProperty (DefaultValueHandling = DefaultValueHandling.Ignore)]
+		public bool IsCanceling = false;
 
 		[JsonIgnore]
-		public WorkSchedule Schedule;
+		public CallStackEntry CurrentEntry;
 
 		[JsonIgnore]
 		public WgEngine Engine;
@@ -30,20 +34,26 @@ namespace WorkGrains
 		public LeapInfo Leap;
 
 		// execution loop
-		public void Run (WaitHandle ehStop)
+		public void Run (WaitHandle ehStop, WaitHandle ehCancel)
 		{
 			WgContext Context = new WgContext (this, Engine);
 
 			while (!ehStop.WaitOne (0) && CallStack.Count > 0)
 			{
-				CallStackEntry CurrentEntry = CallStack.Pop ();
+				IsCanceling |= ehCancel.WaitOne (0);
+
+				//
+				CurrentEntry = CallStack.Pop ();
 
 				bool MustSkipForLeap = Leap != null
 					&& !(CurrentEntry.LoopHeader != null && Leap.LoopHeader == DefaultLoopLabel)
 					&& !(CurrentEntry.LoopHeader != null && Leap.LoopHeader == CurrentEntry.LoopHeader)
 					;
 
-				if (CurrentEntry.Proc == null || MustSkipForLeap)
+				if (CurrentEntry.Proc == null
+					|| MustSkipForLeap
+					|| (IsCanceling && !CurrentEntry.IsFinalizing)
+					)
 				{
 					continue;
 				}
@@ -85,7 +95,7 @@ namespace WorkGrains
 		}
 
 		// push next action
-		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, WorkSchedule StartAt = null, string LoopHeader = null)
+		public void ProceedToGeneric (Delegate NextProc, CodeBlockDataC Data, bool IsFinalizing = false, string LoopHeader = null)
 		{
 			CodeBlockDataC LastStackData = CallStack.Count == 0
 				? null
@@ -106,15 +116,16 @@ namespace WorkGrains
 				{
 					Proc = NextProc,
 					Data = Data,
-					LoopHeader = LoopHeader
+					LoopHeader = LoopHeader,
+					IsFinalizing = IsFinalizing || (CurrentEntry?.IsFinalizing ?? false)
 				});
 		}
 
 		// push next action, typified
-		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = null, WorkSchedule StartAt = null, string LoopHeader = null)
+		public void ProceedTo<T> (Action<WgContext, T> NextProc, T Data = null, bool IsFinalizing = false, string LoopHeader = null)
 			where T : CodeBlockDataC
 		{
-			ProceedToGeneric (NextProc, Data, StartAt, LoopHeader);
+			ProceedToGeneric (NextProc, Data, IsFinalizing, LoopHeader);
 		}
 
 		// postpone
