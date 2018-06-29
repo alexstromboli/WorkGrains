@@ -49,6 +49,7 @@
     <Compile Include="CodeBlockData.cs" />
     <Compile Include="Converters\CodeBlockDataConverter.cs" />
     <Compile Include="Converters\DelegateConverter.cs" />
+    <Compile Include="Converters\WgEngineConverter.cs" />
     <Compile Include="GrainInfo.cs" />
     <Compile Include="IGrain.cs" />
     <Compile Include="LeapInfo.cs" />

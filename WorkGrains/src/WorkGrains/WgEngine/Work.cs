@@ -34,11 +34,16 @@ namespace WorkGrains
 		public LeapInfo Leap;
 
 		// execution loop
-		public void Run (WaitHandle ehStop, WaitHandle ehCancel)
+		public void Run (WaitHandle ehStop, WaitHandle ehCancel, int SecondsRun = 10)
 		{
+			DateTime dtEndAt = DateTime.Now.AddSeconds (SecondsRun);
+
 			WgContext Context = new WgContext (this, Engine);
 
-			while (!ehStop.WaitOne (0) && CallStack.Count > 0)
+			while (!ehStop.WaitOne (0)
+				&& CallStack.Count > 0
+				&& DateTime.Now < dtEndAt
+				)
 			{
 				IsCanceling |= ehCancel.WaitOne (0);
 
