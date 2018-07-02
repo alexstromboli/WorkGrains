@@ -16,6 +16,9 @@ namespace WorkGrains
 	[JsonConverter (typeof(WgEngineConverter))]
 	public partial class WgEngine : IDisposable
 	{
+		public static readonly string EngineVersionToken = "1";
+		public static readonly string EngineLockFileName = "lock";
+
 		// get serialized
 		public List<Work> Works;
 
@@ -34,9 +37,12 @@ namespace WorkGrains
 		{
 		}
 
+		// here: consider move to Run as local
 		protected string WorkDirPath;
+		protected string LockFilePath;
+		protected FileStream fsLock;
 
-		protected ManualResetEvent mreStopping;     // set under lock RequestsQueue
+		protected ManualResetEvent mreStopping;     // set under lock StateChangeToken
 		protected ManualResetEvent mreStopped;
 		protected AutoResetEvent areRequestsEnqueued;
 
@@ -63,15 +69,53 @@ namespace WorkGrains
 					throw new WrongEngineStateException ();
 				}
 
+				//
+				this.WorkDirPath = Path.GetFullPath (WorkDirPath);
+				LockFilePath = Path.Combine (WorkDirPath, EngineLockFileName);
+
+				// lock key file in the directory
+				try
+				{
+					if (File.Exists (LockFilePath))
+					{
+						fsLock = new FileStream (LockFilePath, FileMode.CreateNew, FileAccess.Read, FileShare.None);
+
+						// check version
+						string Version;
+						using (StreamReader rdr = new StreamReader (fsLock))
+						{
+							Version = rdr.ReadToEnd ().Trim ();
+						}
+
+						if (Version != EngineVersionToken)
+						{
+							// here: throw due
+							throw new Exception ();
+						}
+					}
+					else
+					{
+						Directory.CreateDirectory (this.WorkDirPath);
+						fsLock = new FileStream (LockFilePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+						using (StreamWriter wr = new StreamWriter (fsLock))
+						{
+							wr.Write (EngineVersionToken);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					// here: handle failure to lock file
+				}
+
+				//
 				State = EngineState.Running;
 			}
 
+			// close on exit
+			fsLock.Close ();
+
 			//
-			this.WorkDirPath = Path.GetFullPath (WorkDirPath);
-
-			// here: lock pid file in the directory
-			// check version
-
 			throw new NotImplementedException ();
 		}
 

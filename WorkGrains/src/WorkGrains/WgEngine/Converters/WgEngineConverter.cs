@@ -24,6 +24,7 @@ namespace WorkGrains.Converters
 
 		public override object ReadJson (JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
+			// here: replace JObject.Load with picking and deserializing due property
 			JObject Obj = JObject.Load (reader);
 			List<Work> Works = Obj[nameof (WgEngine.Works)].ToObject<List<Work>> ();
 
