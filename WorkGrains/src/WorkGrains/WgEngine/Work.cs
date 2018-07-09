@@ -33,8 +33,12 @@ namespace WorkGrains
 		[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
 		public LeapInfo Leap;
 
+		// cancel flag set by engine
+		[JsonIgnore]
+		public ManualResetEvent ehCancel;
+
 		// execution loop
-		public void Run (WaitHandle ehStop, WaitHandle ehCancel, int SecondsRun = 10)
+		public void Run (WaitHandle ehStop, string StackFilePath, int SecondsRun = 10)
 		{
 			DateTime dtEndAt = DateTime.Now.AddSeconds (SecondsRun);
 

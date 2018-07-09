@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 
 using Newtonsoft.Json;
+
 using WorkGrains.Converters;
 
 namespace WorkGrains
@@ -18,6 +20,8 @@ namespace WorkGrains
 	{
 		public static readonly string EngineVersionToken = "1";
 		public static readonly string EngineLockFileName = "lock";
+		public static readonly string TimeScheduleDirName = "time";
+		public static readonly string SignalsDirName = "signals";
 
 		// get serialized
 		public List<Work> Works;
@@ -40,6 +44,9 @@ namespace WorkGrains
 		// here: consider move to Run as local
 		protected string WorkDirPath;
 		protected string LockFilePath;
+		protected string TimeScheduleDirPath;
+		protected string SignalsDirPath;
+		protected string NoWaitFilePath;
 		protected FileStream fsLock;
 
 		protected ManualResetEvent mreStopping;     // set under lock StateChangeToken
@@ -72,6 +79,9 @@ namespace WorkGrains
 				//
 				this.WorkDirPath = Path.GetFullPath (WorkDirPath);
 				LockFilePath = Path.Combine (WorkDirPath, EngineLockFileName);
+				TimeScheduleDirPath = Path.Combine (WorkDirPath, TimeScheduleDirName);
+				SignalsDirPath = Path.Combine (WorkDirPath, SignalsDirName);
+				NoWaitFilePath = Path.Combine (TimeScheduleDirPath, "0");
 
 				// lock key file in the directory
 				try
@@ -109,11 +119,116 @@ namespace WorkGrains
 				}
 
 				//
+				areRequestsEnqueued = new AutoResetEvent (false);
 				State = EngineState.Running;
 			}
 
+			// here: create mreStop
+
+			// here: load requests queue
+			// and delete the file
+			// mark to-be-canceled ids
+
+			// here: start all from "0" (and delete it)
+			// flagging cancel for those requested cancel
+
+			// main loop
+			WaitHandle[] Wait = new WaitHandle[]
+				{
+					whStop,					// 0
+					areRequestsEnqueued		// 1
+				};
+
+			while (true)
+			{
+				// here: process all requests
+
+				// to wait by time
+				int Now = UnixTime ();
+				var Earliest = Directory.GetFiles (TimeScheduleDirPath, "*.*")
+					.Select (p =>
+						{
+							string Name = Path.GetFileNameWithoutExtension (p);
+							int Time;
+							if (!int.TryParse (Name, out Time))
+							{
+								Time = -1;
+							}
+
+							return new
+								{
+									Path = p,
+									Name = Path.GetFileNameWithoutExtension (p),
+									Time
+								};
+						})
+					.Where (e => e.Time != -1)
+					.OrderBy (e => e.Time)
+					.FirstOrDefault ()
+					;
+
+				string EarliestTimePath = Earliest?.Path;
+				int StartByTime = Earliest?.Time ?? -1;
+
+				Guid? StartByTimeId = EarliestTimePath == null
+					? null
+					: File.ReadAllLines (EarliestTimePath)
+						.Select (s =>
+								{
+									Guid g;
+									return Guid.TryParse (s, out g) ? g : (Guid?)null;
+								})
+							.FirstOrDefault (g => g != null)
+					;
+
+				int WaitForTime = StartByTimeId == null
+						? Timeout.Infinite
+						: StartByTime > Now
+							? StartByTime - Now
+							: 0
+					;
+
+				// wait
+				int WaitIndex = StartByTimeId != null && WaitForTime == 0
+					? WaitHandle.WaitTimeout
+					: WaitHandle.WaitAny (Wait, WaitForTime)
+					;
+
+				if (WaitIndex == 0)     // stop
+				{
+					break;
+				}
+
+				if (WaitIndex == 1)     // request
+				{
+					continue;
+				}
+
+				// timeout, work to do
+				if (StartByTimeId == null)      // can't be
+				{
+					continue;
+				}
+
+				// here: start work StartByTimeId
+			}
+
+			lock (StateChangeToken)
+			{
+				State = EngineState.Stopping;
+			}
+
+			// here: serialize requests
+
 			// close on exit
 			fsLock.Close ();
+
+			// here: close all reset-events
+
+			lock (StateChangeToken)
+			{
+				State = EngineState.Stopped;
+			}
 
 			//
 			throw new NotImplementedException ();
