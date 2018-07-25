@@ -30,9 +30,10 @@ namespace WorkGrains
 
 		public enum EngineState
 		{
-			Stopping,
 			Stopped,
-			Running
+			Running,
+			Stopping,			// works are still running, but requests don't get processed, they get just stored for serialization
+			Finalizing			// serialization of state
 		}
 
 		protected EngineState State = EngineState.Stopped;
@@ -218,6 +219,13 @@ namespace WorkGrains
 				State = EngineState.Stopping;
 			}
 
+			// here: stop works
+
+			lock (StateChangeToken)
+			{
+				State = EngineState.Finalizing;
+			}
+
 			// here: serialize requests
 
 			// close on exit
@@ -248,7 +256,7 @@ namespace WorkGrains
 		{
 			lock (StateChangeToken)
 			{
-				if (State != EngineState.Running)
+				if (State != EngineState.Running && State != EngineState.Stopping)
 				{
 					throw new WrongEngineStateException ();
 				}
